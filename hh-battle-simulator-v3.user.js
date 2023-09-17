@@ -890,8 +890,8 @@ function createLeaguePointsElement$(resultPromise) {
 
             const $powerHeader = $('.league_table .head-column[column="power"] span');
             $powerHeader.html($powerHeader.html().replace('Power', 'Sim'));
-            const totalPoints = results.reduce((p, c) => p + c[1].avgPoints, 0) * 3;
-            $powerHeader.attr('tooltip', `Total: ${toRoundedNumber(totalPoints, 10)}`);
+            const sumPoints = results.reduce((p, c) => p + c[1].avgPoints, 0) * 3;
+            $powerHeader.attr('tooltip', `Sum: ${toRoundedNumber(sumPoints, 10)}`);
 
             const replacePowerViewWithSimResult = () => {
                 const { opponents_list } = window;
