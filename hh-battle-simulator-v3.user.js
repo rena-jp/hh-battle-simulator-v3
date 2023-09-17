@@ -724,9 +724,9 @@ function createLeaguePointsElement$(resultPromise) {
                 });
 
                 $('.player_team_block.battle_hero').find('.sim-result').remove();
-                $('.player_team_block.battle_hero .icon-area')
-                    .before(createChanceElement$(resultPromise, player, opponent).addClass('sim-left'))
-                    .before(createLeaguePointsElement$(resultPromise).addClass('sim-right'));
+                const $iconArea = $('.player_team_block.battle_hero .icon-area');
+                $iconArea.before(createChanceElement$(resultPromise, player, opponent).addClass('sim-left'));
+                if (battleType === 'leagues') $iconArea.before(createLeaguePointsElement$(resultPromise).addClass('sim-right'));
             }
         }
 
