@@ -879,7 +879,7 @@ function createLeaguePointsElement$(resultPromise) {
             };
             replacePowerDataWithSimResult();
 
-            const $challengesHeader = $('.league_table .head-column[column="match_history_sorting"] span');
+            const $challengesHeader = $('.league_table .head-column[column="match_history_sorting"] > span');
             const expectedPoints = opponents.reduce((p, c) => {
                 const matchHistory = Object.values(c.match_history)[0]?.filter(e => e != null) ?? [];
                 const knownPoints = matchHistory.reduce((p, c) => p + parseInt(c.match_points), 0);
@@ -888,7 +888,7 @@ function createLeaguePointsElement$(resultPromise) {
             }, 0);
             $challengesHeader.attr('tooltip', `Expected: ${toRoundedNumber(expectedPoints, 10)}`);
 
-            const $powerHeader = $('.league_table .head-column[column="power"] span');
+            const $powerHeader = $('.league_table .head-column[column="power"] > span');
             $powerHeader.html($powerHeader.html().replace('Power', 'Sim'));
             const sumPoints = results.reduce((p, c) => p + c[1].avgPoints, 0) * 3;
             $powerHeader.attr('tooltip', `Sum: ${toRoundedNumber(sumPoints, 10)}`);
