@@ -15,15 +15,15 @@ https://github.com/rena-jp/hh-battle-simulator-v3/raw/main/hh-battle-simulator-v
 ### Expected MOJO
 ![mojo](https://github.com/rena-jp/hh-battle-simulator/assets/101486573/954956cc-d7b0-4d78-bd27-35f96f2b4bea)
 
-### Expected league point
-![point](https://github.com/rena-jp/hh-battle-simulator/assets/101486573/8e87739f-dc23-44d4-af9e-600d6298ed8f)
+### Expected league points
+![points](https://github.com/rena-jp/hh-battle-simulator/assets/101486573/8e87739f-dc23-44d4-af9e-600d6298ed8f)
 
 ### Battle table
 ![battle-table](https://github.com/rena-jp/hh-battle-simulator/assets/101486573/ef27b4a6-94d6-4c8b-8f3d-090a3373fdca)
 
-### League point range
-![point-range](https://github.com/rena-jp/hh-battle-simulator-v3/assets/101486573/aa4ac3c8-4e95-4239-bb91-2ea76427a451)
+### League points range
+![points-range](https://github.com/rena-jp/hh-battle-simulator-v3/assets/101486573/aa4ac3c8-4e95-4239-bb91-2ea76427a451)
 
-### League table sim sorting
+### League table sim
 #### (After a booster expires, you may need to open the team selection page.)
-![league-table-sim-sorting](https://github.com/rena-jp/hh-battle-simulator-v3/assets/101486573/ef503ea3-2247-4b7a-8de0-9f970529a164)
+![league-table-sim](https://github.com/rena-jp/hh-battle-simulator-v3/assets/101486573/ef503ea3-2247-4b7a-8de0-9f970529a164)
