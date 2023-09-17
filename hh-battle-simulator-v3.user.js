@@ -886,7 +886,7 @@ function createLeaguePointsElement$(resultPromise) {
                 const remainingChallenges = 3 - matchHistory.length;
                 return p + knownPoints + c.power * remainingChallenges;
             }, 0);
-            $challengesHeader.attr('tooltip', `Expected: ${toRoundedNumber(expectedPoints, 10)}`);
+            $challengesHeader.attr('tooltip', `Score expected: ${toRoundedNumber(expectedPoints, 10)}`);
 
             const $powerHeader = $('.league_table .head-column[column="power"] > span');
             $powerHeader.html($powerHeader.html().replace('Power', 'Sim'));
