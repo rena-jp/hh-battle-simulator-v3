@@ -112,19 +112,26 @@ const workerScript = (() => {
             }
 
             if (defender.reflect && 1 <= defenderSkill && defenderSkill <= 2) {
-                defenderSkill++;
-                const reflectedDamage = Math.ceil((egoDamage + executionDamage) * defender.reflect);
-
-                let reflectedDamageToShield = 0;
-                if (attacker.shield && 1 <= attackerSkill && attackerSkill <= attacker.shieldEndurance) {
-                    reflectedDamageToShield = Math.min(Math.ceil(reflectedDamage), attacker.shieldEndurance - (attackerSkill - 1));
-                    attackerSkill += reflectedDamageToShield;
-                }
-
-                const reflectedDamageToEgo = reflectedDamage - reflectedDamageToShield;
-                attackerEgo -= reflectedDamageToEgo;
-                if (attackerEgo <= 0) {
-                    // TODO: I suspect the game do nothing.
+                // You do not receive reflected damage while your opponent is stunned.
+                // You receive reflected damage just when you stun your opponent, so reflection is skipped only once.
+                const isDefenderStunned = attacker.stun && attackerSkill == 1;
+                if (!isDefenderStunned) {
+                    defenderSkill++;
+                    // Defender does not have shield and reflect at the same time, so shieldDamage is not required.
+                    const reflectedDamage = Math.ceil((egoDamage + executionDamage) * defender.reflect);
+    
+                    let reflectedDamageToShield = 0;
+                    if (attacker.shield && 1 <= attackerSkill && attackerSkill <= attacker.shieldEndurance) {
+                        const remainingAttackerShieald = attacker.shieldEndurance - (attackerSkill - 1);
+                        reflectedDamageToShield = Math.min(reflectedDamage, remainingAttackerShieald);
+                        attackerSkill += reflectedDamageToShield;
+                    }
+    
+                    const reflectedDamageToEgo = reflectedDamage - reflectedDamageToShield;
+                    attackerEgo -= reflectedDamageToEgo;
+                    if (attackerEgo <= 0) {
+                        // TODO: I suspect the game do nothing.
+                    }
                 }
             }
 
