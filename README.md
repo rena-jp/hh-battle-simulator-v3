@@ -27,3 +27,6 @@ https://github.com/rena-jp/hh-battle-simulator-v3/raw/main/hh-battle-simulator-v
 ### League table sim
 #### (After a booster expires, you may need to open the team selection page.)
 ![league-table-sim](https://github.com/rena-jp/hh-battle-simulator-v3/assets/101486573/ef503ea3-2247-4b7a-8de0-9f970529a164)
+
+### Options (HH++ required)
+![options](https://github.com/rena-jp/hh-battle-simulator-v3/assets/101486573/4192efe7-c7b4-4646-a594-00e363436b15)
