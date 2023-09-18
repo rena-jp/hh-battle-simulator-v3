@@ -119,14 +119,14 @@ const workerScript = (() => {
                     defenderSkill++;
                     // Defender does not have shield and reflect at the same time, so shieldDamage is not required.
                     const reflectedDamage = Math.ceil((egoDamage + executionDamage) * defender.reflect);
-    
+
                     let reflectedDamageToShield = 0;
                     if (attacker.shield && 1 <= attackerSkill && attackerSkill <= attacker.shieldEndurance) {
                         const remainingAttackerShieald = attacker.shieldEndurance - (attackerSkill - 1);
                         reflectedDamageToShield = Math.min(reflectedDamage, remainingAttackerShieald);
                         attackerSkill += reflectedDamageToShield;
                     }
-    
+
                     const reflectedDamageToEgo = reflectedDamage - reflectedDamageToShield;
                     attackerEgo -= reflectedDamageToEgo;
                     if (attackerEgo <= 0) {
@@ -456,6 +456,35 @@ function createLeaguePointsElement$(resultPromise) {
     /* global localStorageGetItem */
     if (typeof localStorageSetItem !== 'function') throw new Error('localStorageSetItem is not found');
     /* global localStorageSetItem */
+
+    /* Config */
+    let doSimulateLeagueTable = true;
+    let doSimulateFoughtOpponents = true;
+
+    const { HHPlusPlus, hhPlusPlusConfig } = window;
+    if (HHPlusPlus != null && hhPlusPlusConfig != null) {
+        hhPlusPlusConfig.registerGroup({ key: 'sim_v3', name: 'Sim v3' });
+        hhPlusPlusConfig.registerModule({
+            group: 'sim_v3',
+            configSchema: {
+                baseKey: 'DoSimulateLeagueTable',
+                label: 'Run simulations in the league table (maybe slow)',
+                default: true,
+                subSettings: [
+                    { key: 'skip', default: false, label: 'Skip fought opponents' },
+                ],
+            },
+            run(subSettings) {
+                doSimulateLeagueTable = true;
+                doSimulateFoughtOpponents = !subSettings.skip;
+            },
+        });
+
+        doSimulateLeagueTable = false;
+
+        hhPlusPlusConfig.loadConfig();
+        hhPlusPlusConfig.runModules();
+    }
 
     const afterGameInited = new Promise(resolve => {
         $(() => { resolve(); });
@@ -850,6 +879,8 @@ function createLeaguePointsElement$(resultPromise) {
 
     async function changePowerSortToSimSort() {
         if (checkPage('/tower-of-fame.html')) {
+            if (!doSimulateLeagueTable) return;
+
             const { opponents_list, Hero } = window;
             if (opponents_list == null) throw new Error('opponents_list is not found');
 
@@ -865,16 +896,16 @@ function createLeaguePointsElement$(resultPromise) {
             const playerTeam = await fetchPlayerLeaguesTeam();
             if (playerTeam == null) return;
 
-            const opponents = opponents_list
-                .filter(opponent => opponent.player.id_fighter != playerId);
+            let opponents = opponents_list.filter(opponent => opponent.player.id_fighter != playerId);
+            if (!doSimulateFoughtOpponents) {
+                opponents = opponents.filter(opponent => Object.values(opponent.match_history)[0].filter(e => e != null).length < 3);
+            }
 
             const resultsPromise = opponents.map(opponent => (
                 window.HHBattleSimulator
                     .simulateFromTeams(playerTeam, opponent.player.team, mythicBoosterMultiplier)
                     .then(result => [opponent.player.id_fighter, result])
             ));
-
-            await afterGameInited;
 
             const results = await Promise.all(resultsPromise);
             const resultMap = Object.fromEntries(results);
@@ -886,11 +917,15 @@ function createLeaguePointsElement$(resultPromise) {
             };
             replacePowerDataWithSimResult();
 
+            await afterGameInited;
+
             const $challengesHeader = $('.league_table .head-column[column="match_history_sorting"] > span');
-            const expectedPoints = opponents.reduce((p, c) => {
-                const matchHistory = Object.values(c.match_history)[0]?.filter(e => e != null) ?? [];
-                const knownPoints = matchHistory.reduce((p, c) => p + parseInt(c.match_points), 0);
-                const remainingChallenges = 3 - matchHistory.length;
+            const expectedPoints = opponents_list.reduce((p, c) => {
+                const matchHistory = Object.values(c.match_history)[0];
+                if (!Array.isArray(matchHistory)) return p;
+                const matchResults = matchHistory.filter(e => e != null);
+                const knownPoints = matchResults.reduce((p, c) => p + parseInt(c.match_points), 0);
+                const remainingChallenges = 3 - matchResults.length;
                 return p + knownPoints + c.power * remainingChallenges;
             }, 0);
             $challengesHeader.attr('tooltip', `Score expected: <em>${toRoundedNumber(expectedPoints, 10)}</em>`);
