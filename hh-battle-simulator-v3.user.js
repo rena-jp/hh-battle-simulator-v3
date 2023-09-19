@@ -43,10 +43,10 @@ window.HHBattleSimulator = {
 
 const workerScript = (() => {
     self.addEventListener('message', e => {
-        const { func, args } = e.data;
+        const { id, func, args } = e.data;
         const f = self[func];
         const ret = f(...args);
-        self.postMessage({ func, ret });
+        self.postMessage({ id, ret });
     });
 
     function simulate(player, opponent) {
@@ -162,47 +162,38 @@ const workerScript = (() => {
 const workerBlob = new Blob([workerScript], { type: 'text/javascript' });
 const workerURL = URL.createObjectURL(workerBlob);
 const maxWorkers = navigator?.hardwareConcurrency ?? 1;
-const minWorkers = 1;
-let runningWorkers = 0;
-const waiterQueue = [];
-const workerPool = [];
+const workerList = [];
+const waiterMap = new Map();
+let workerIndex = 0;
+let workerTaskIndex = 0;
 
-async function getWorker() {
-    const worker = workerPool.pop();
-    if (worker != null) {
-        return worker;
-    } else if (runningWorkers < maxWorkers) {
-        runningWorkers++;
-        return new Worker(workerURL);
-    } else {
-        return new Promise(resolve => {
-            waiterQueue.push(resolve);
-        });
+function getWorker() {
+    let worker = workerList[workerIndex];
+    if (worker == null) {
+        worker = new Worker(workerURL);
+        const resolve = ({ data: { id, ret } }) => {
+            waiterMap.get(id).resolve(ret);
+            waiterMap.delete(id);
+        };
+        const reject = ({ data: { id, ret } }) => {
+            waiterMap.get(id).reject(ret);
+            waiterMap.delete(id);
+        };
+        worker.addEventListener('message', resolve);
+        worker.addEventListener("messageerror", reject);
+        worker.addEventListener('error', reject);
+        workerList[workerIndex] = worker;
     }
-}
-
-function releaseWorker(worker) {
-    const waiter = waiterQueue.shift();
-    if (waiter != null) {
-        waiter(worker);
-    } else if (workerPool.length < minWorkers) {
-        workerPool.push(worker);
-    } else {
-        worker.terminate();
-        runningWorkers--;
-    }
+    workerIndex = (workerIndex + 1) % maxWorkers;
+    return worker;
 }
 
 async function workerRun(func, args) {
-    const worker = await getWorker();
-    const promise = new Promise((resolve, reject) => {
-        worker.addEventListener('message', e => { resolve(e.data.ret); });
-        worker.addEventListener("messageerror", e => { reject(e); });
-        worker.addEventListener('error', e => { reject(e); });
+    const id = workerTaskIndex++;
+    getWorker().postMessage({ id, func, args });
+    return new Promise((resolve, reject) => {
+        waiterMap.set(id, { resolve, reject });
     });
-    promise.then(() => { releaseWorker(worker); });
-    worker.postMessage({ func, args });
-    return promise;
 }
 
 async function simulateFromBattleData(player, opponent) {
