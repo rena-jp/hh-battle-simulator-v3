@@ -908,9 +908,6 @@ function createLeaguePointsElement$(resultPromise) {
             };
             replacePowerDataWithSimResult();
 
-            await afterGameInited;
-
-            const $challengesHeader = $('.league_table .head-column[column="match_history_sorting"] > span');
             const expectedPoints = opponents_list.reduce((p, c) => {
                 const matchHistory = Object.values(c.match_history)[0];
                 if (!Array.isArray(matchHistory)) return p;
@@ -919,12 +916,20 @@ function createLeaguePointsElement$(resultPromise) {
                 const remainingChallenges = 3 - matchResults.length;
                 return p + knownPoints + c.power * remainingChallenges;
             }, 0);
-            $challengesHeader.attr('tooltip', `Score expected: <em>${toRoundedNumber(expectedPoints, 10)}</em>`);
+            const numOpponents = opponents_list.length - 1;
+            const expectedAverage = expectedPoints / numOpponents / 3;
+
+            const sumPoints = results.reduce((p, c) => p + c[1].avgPoints, 0) * 3;
+            const averagePoints = sumPoints / results.length / 3;
+
+            await afterGameInited;
+
+            const $challengesHeader = $('.league_table .head-column[column="match_history_sorting"] > span');
+            $challengesHeader.attr('tooltip', `Score expected: <em>${toRoundedNumber(expectedPoints, 10)}</em><br>Average: <em>${toRoundedNumber(expectedAverage, 100)}</em>`);
 
             const $powerHeader = $('.league_table .head-column[column="power"] > span');
             $powerHeader.html($powerHeader.html().replace('Power', 'Sim'));
-            const sumPoints = results.reduce((p, c) => p + c[1].avgPoints, 0) * 3;
-            $powerHeader.attr('tooltip', `Sum: <em>${toRoundedNumber(sumPoints, 10)}</em>`);
+            $powerHeader.attr('tooltip', `Sum: <em>${toRoundedNumber(sumPoints, 10)}</em><br>Average: <em>${toRoundedNumber(averagePoints, 100)}</em>`);
 
             const replacePowerViewWithSimResult = () => {
                 const { opponents_list } = window;
