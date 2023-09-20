@@ -40,9 +40,13 @@ window.HHBattleSimulator = {
 const workerScript = (() => {
     self.addEventListener('message', e => {
         const { id, func, args } = e.data;
-        const f = self[func];
-        const ret = f(...args);
-        self.postMessage({ id, ret });
+        try {
+            const f = self[func];
+            const ret = f(...args);
+            self.postMessage({ id, ret });
+        } catch (error) {
+            self.postMessage({ id, error });
+        }
     });
 
     function simulate(player, opponent) {
@@ -167,17 +171,20 @@ function getWorker() {
     let worker = workerList[workerIndex];
     if (worker == null) {
         worker = new Worker(workerURL);
-        const resolve = ({ data: { id, ret } }) => {
-            waiterMap.get(id).resolve(ret);
+        const onMessage = ({ data: { id, ret, error } }) => {
+            if (ret != null) {
+                waiterMap.get(id).resolve(ret);
+            } else {
+                waiterMap.get(id).reject(error);
+            }
             waiterMap.delete(id);
         };
-        const reject = ({ data: { id, ret } }) => {
-            waiterMap.get(id).reject(ret);
-            waiterMap.delete(id);
+        const onError = error => {
+            throw error;
         };
-        worker.addEventListener('message', resolve);
-        worker.addEventListener("messageerror", reject);
-        worker.addEventListener('error', reject);
+        worker.addEventListener('message', onMessage);
+        worker.addEventListener("messageerror", onError);
+        worker.addEventListener('error', onError);
         workerList[workerIndex] = worker;
     }
     workerIndex = (workerIndex + 1) % maxWorkers;
