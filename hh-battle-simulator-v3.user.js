@@ -24,9 +24,7 @@ window.HHBattleSimulator = {
      * @returns {Promise<{ chance: number, alwaysWin: boolean, neverWin: boolean, avgPoints: number, minPoints: number, maxPoints: number }>} - Player's winning chance and league points
      */
     async simulateFromFighters(playerRawData, opponentRawData) {
-        const player = calcBattleDataFromFighters(playerRawData, opponentRawData);
-        const opponent = calcBattleDataFromFighters(opponentRawData, playerRawData);
-        return await simulateFromBattleData(player, opponent);
+        return await simulateFromFighters(playerRawData, opponentRawData);
     },
     /**
      * @param {*} playerTeam - hero_data.team
@@ -35,9 +33,7 @@ window.HHBattleSimulator = {
      * @returns {Promise<{ chance: number, alwaysWin: boolean, neverWin: boolean, avgPoints: number, minPoints: number, maxPoints: number }>} - Player's winning chance and league points
      */
     async simulateFromTeams(playerTeam, opponentTeam, mythicBoosterMultiplier) {
-        const player = calcBattleDataFromTeams(playerTeam, opponentTeam, mythicBoosterMultiplier);
-        const opponent = calcBattleDataFromTeams(opponentTeam, playerTeam);
-        return await simulateFromBattleData(player, opponent);
+        return await simulateFromTeams(playerTeam, opponentTeam, mythicBoosterMultiplier);
     },
 };
 
@@ -198,6 +194,18 @@ async function workerRun(func, args) {
 
 async function simulateFromBattleData(player, opponent) {
     return await workerRun('simulate', [player, opponent]);
+}
+
+async function simulateFromFighters(playerRawData, opponentRawData) {
+    const player = calcBattleDataFromFighters(playerRawData, opponentRawData);
+    const opponent = calcBattleDataFromFighters(opponentRawData, playerRawData);
+    return await simulateFromBattleData(player, opponent);
+}
+
+async function simulateFromTeams(playerTeam, opponentTeam, mythicBoosterMultiplier) {
+    const player = calcBattleDataFromTeams(playerTeam, opponentTeam, mythicBoosterMultiplier);
+    const opponent = calcBattleDataFromTeams(opponentTeam, playerTeam);
+    return await simulateFromBattleData(player, opponent);
 }
 
 function calcBattleDataFromFighters(fighterRawData, opponentRawData) {
@@ -893,8 +901,7 @@ function createLeaguePointsElement$(resultPromise) {
             }
 
             const resultsPromise = opponents.map(opponent => (
-                window.HHBattleSimulator
-                    .simulateFromTeams(playerTeam, opponent.player.team, mythicBoosterMultiplier)
+                simulateFromTeams(playerTeam, opponent.player.team, mythicBoosterMultiplier)
                     .then(result => [opponent.player.id_fighter, result])
             ));
 
