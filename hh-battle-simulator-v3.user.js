@@ -864,10 +864,22 @@ function createLeaguePointsElement$(resultPromise) {
                 }
             }, true);
         }
+        if (checkPage('/leagues-pre-battle.html')) {
+            const { hero_data } = window;
+            if (hero_data == null) throw new Error('hero_data is not found');
+            if (hero_data.team) {
+                localStorageSetItem('HHBattleSimulatorPlayerLeaguesTeam', JSON.stringify(hero_data.team));
+            }
+        }
+        if (checkPage('/league-battle.html')) {
+            const { hero_fighter } = window;
+            if (hero_fighter == null) throw new Error('hero_fighter is not found');
+            localStorageSetItem('HHBattleSimulatorPlayerLeaguesTeam', JSON.stringify(hero_fighter));
+        }
     }
 
     async function fetchPlayerLeaguesTeam() {
-        if (!document.referrer.includes('teams.html')) {
+        if (['teams.html', 'leagues-pre-battle.html', 'league-battle.html'].every(e => !document.referrer.includes(e))) {
             try {
                 const teamsPage = await fetch('teams.html');
                 const teamsHtml = await teamsPage.text();
@@ -875,7 +887,10 @@ function createLeaguePointsElement$(resultPromise) {
                 if (match) {
                     const teams_data = JSON.parse(match[1]);
                     const leaguesTeam = Object.values(teams_data).find(team => team.selected_for_battle_type.includes('leagues'));
-                    if (leaguesTeam != null) return leaguesTeam;
+                    if (leaguesTeam != null) {
+                        localStorageSetItem('HHBattleSimulatorPlayerLeaguesTeam', JSON.stringify(leaguesTeam));
+                        return leaguesTeam;
+                    }
                 }
             } catch (e) { }
         }
