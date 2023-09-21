@@ -56,7 +56,9 @@ const workerScript = (() => {
         opponent.shieldEndurance = Math.ceil(opponent.ego * opponent.shield);
         player.deathThreshold = player.ego * opponent.execute;
         opponent.deathThreshold = opponent.ego * player.execute;
-        return attack(player, player.ego, player.attack, player.defense, 0, opponent, opponent.ego, opponent.attack, opponent.defense, 0);
+        const result = attack(player, player.ego, player.attack, player.defense, 0, opponent, opponent.ego, opponent.attack, opponent.defense, 0);
+        result.avgPoints = Math.max(result.minPoints, Math.min(result.maxPoints, result.avgPoints));
+        return result;
 
         function createResult(chance, alwaysWin, neverWin, points) {
             return {
@@ -312,11 +314,13 @@ function toPercentage(value) {
 }
 
 function toLeaguePointsPerFight(value) {
+    if (value >= 25) return '25';
     if (value > 24.99) return truncateSoftly(value, 3);
     return truncateSoftly(value, 2);
 }
 
 function toPreciseLeaguePointsPerFight(value) {
+    if (value >= 25) return '25';
     if (value > 24.99) return (25 - parseFloat((25 - value).toPrecision(2))).toString();
     return truncateSoftly(value, 2);
 }
