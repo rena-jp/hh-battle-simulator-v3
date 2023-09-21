@@ -292,19 +292,34 @@ function checkPage(...args) {
     return args.some(e => window.location.pathname.includes(e));
 }
 
-function toRoundedNumber(value, m) {
-    return Math.round(value * m) / m;
+function toRoundedNumber(value, digit) {
+    digit ??= 0;
+    return (Math.round(value * (10 ** digit)) / (10 ** digit)).toString();
+}
+
+function truncateSoftly(value, digit) {
+    digit ??= 0;
+    return (Math.floor(Math.round(value * (10 ** (digit + 1))) / 10) / (10 ** digit)).toString();
 }
 
 function toPercentage(value) {
-    const percentage = 100 * value;
-    if (percentage > 99.99) return '100%';
-    if (percentage >= 99.9) return '99.9%';
-    if (percentage >= 10) return `${toRoundedNumber(percentage, 10)}%`;// 10%-99.9%
-    if (percentage >= 0.01) return `${toRoundedNumber(percentage, 100)}%`;// 0.01%-9.99%
-    if (percentage >= 9.5e-4) return `${percentage.toPrecision(1)}%`; // 0.001%-0.01%
+    const percentage = value * 100;
+    if (percentage >= 100) return '100%';
+    if (percentage >= 10) return `${truncateSoftly(percentage, 1)}%`; // 10%-99.9%
+    if (percentage >= 0.01) return `${truncateSoftly(percentage, 2)}%`; // 0.01%-9.99%
+    if (percentage >= 0) return `${truncateSoftly(percentage, 3)}%`; // 0% or 0.001%-0.009%
     return '0%';
-};
+}
+
+function toLeaguePointsPerFight(value) {
+    if (value > 24.99) return truncateSoftly(value, 3);
+    return truncateSoftly(value, 2);
+}
+
+function toPreciseLeaguePointsPerFight(value) {
+    if (value > 24.99) return (25 - parseFloat((25 - value).toPrecision(2))).toString();
+    return truncateSoftly(value, 2);
+}
 
 function getRiskColor(chance) {
     const value = (Math.min(1, chance) ** 3) * 2;
@@ -402,7 +417,7 @@ function createMojoElement$(resultPromise, winMojo) {
         const odds = winMojo * winChance + lossMojo * lossChance;
         $element
             .removeClass('sim-pending')
-            .html(`<div class="sim-label">E[M]:</div><span class="sim-mojo">${toRoundedNumber(odds, 100)}${question}</span>`)
+            .html(`<div class="sim-label">E[M]:</div><span class="sim-mojo">${toRoundedNumber(odds, 2)}${question}</span>`)
             .css('color', getMojoColor(odds))
             .attr('tooltip', createMojoTable());
 
@@ -410,9 +425,9 @@ function createMojoElement$(resultPromise, winMojo) {
             const { column, columns, row } = TableHelper;
             return $('<table class="sim-table"></table>')
                 .append(row(column(1, ''), columns(1, ['Win', 'Loss'])))
-                .append(row(column(1, 'Mojo'), columns(1, [winMojo, lossMojo].map(e => toRoundedNumber(e, 100)))))
+                .append(row(column(1, 'Mojo'), columns(1, [winMojo, lossMojo].map(e => toRoundedNumber(e, 2)))))
                 .append(row(column(1, '%'), columns(1, [winChance, lossChance].map(e => toPercentage(e)))))
-                .append(row(column(1, 'E[M]'), column(2, toRoundedNumber(odds, 100))))
+                .append(row(column(1, 'E[M]'), column(2, toRoundedNumber(odds, 2))))
                 .prop('outerHTML');
         }
     }
@@ -432,16 +447,17 @@ function createLeaguePointsElement$(resultPromise) {
         if (result.minPoints >= 25) mark = '<div class="vCheck_mix_icn sim-mark"></div>';
         $element
             .removeClass('sim-pending')
-            .html(`<div class="sim-label">E[P]:</div>${mark}<span class="sim-points">${toRoundedNumber(result.avgPoints, 100)}${question}</span>`)
+            .html(`<div class="sim-label">E[P]:</div>${mark}<span class="sim-points">${toLeaguePointsPerFight(result.avgPoints)}${question}</span>`)
             .css('color', getRiskColor(result.avgPoints / 25))
             .attr('tooltip', createPointsTable());
 
         function createPointsTable() {
             const { column, columns, row } = TableHelper;
             return $('<table class="sim-table"></table>')
-                .append(row(column(3, 'Points')))
-                .append(row(columns(1, ['Min', 'Avg', 'Max'])))
-                .append(row(columns(1, [result.minPoints, result.avgPoints, result.maxPoints].map(e => toRoundedNumber(e, 100)))))
+                .append(row(column(2, 'Points')))
+                .append(row(columns(1, ['Max', result.maxPoints.toFixed()])))
+                .append(row(columns(1, ['Avg', toPreciseLeaguePointsPerFight(result.avgPoints)])))
+                .append(row(columns(1, ['Min', result.minPoints.toFixed()])))
                 .prop('outerHTML');
         }
     }
@@ -954,11 +970,11 @@ function createLeaguePointsElement$(resultPromise) {
             await afterGameInited;
 
             const $challengesHeader = $('.league_table .head-column[column="match_history_sorting"] > span');
-            $challengesHeader.attr('tooltip', `Score expected: <em>${toRoundedNumber(expectedPoints, 10)}</em><br>Average: <em>${toRoundedNumber(expectedAverage, 100)}</em>`);
+            $challengesHeader.attr('tooltip', `Score expected: <em>${truncateSoftly(expectedPoints, 1)}</em><br>Average: <em>${toLeaguePointsPerFight(expectedAverage)}</em>`);
 
             const $powerHeader = $('.league_table .head-column[column="power"] > span');
             $powerHeader.html($powerHeader.html().replace('Power', 'Sim'));
-            $powerHeader.attr('tooltip', `Sum: <em>${toRoundedNumber(sumPoints, 10)}</em><br>Average: <em>${toRoundedNumber(averagePoints, 100)}</em>`);
+            $powerHeader.attr('tooltip', `Sum: <em>${truncateSoftly(sumPoints, 1)}</em><br>Average: <em>${toLeaguePointsPerFight(averagePoints)}</em>`);
 
             const replacePowerViewWithSimResult = () => {
                 const { opponents_list } = window;
@@ -970,7 +986,7 @@ function createLeaguePointsElement$(resultPromise) {
                         let mark = '';
                         if (result.minPoints >= 25) mark = '<div class="vCheck_mix_icn sim-mark"></div>';
                         $columnContent
-                            .html(`${mark}${toRoundedNumber(result.avgPoints, 100)}`)
+                            .html(`${mark}${truncateSoftly(result.avgPoints, 2)}`)
                             .css('color', getRiskColor(result.avgPoints / 25));
                     } else {
                         $columnContent.text('-');
