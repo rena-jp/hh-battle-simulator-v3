@@ -1046,10 +1046,10 @@ function addStyle() {
 }
 .sim-mark {
     display: inline-block;
-    width: 1.5rem;
-    height: 1.5rem;
-    margin: -0.5rem 0.25rem 0 -1.5rem;
-    background-size: 1.5rem;
+    width: 1em;
+    height: 1em;
+    margin: -0.125em 0.25em 0.125em -1.25em;
+    background-size: 1em;
     vertical-align: bottom;
 }
 table.sim-table {
@@ -1064,6 +1064,10 @@ table.sim-table td {
 }
 .sim-column {
     text-align: center;
+    text-wrap: nowrap;
+}
+.sim-column .sim-mark {
+    margin: 0.25em 0;
 }
 </style>`);
 }
