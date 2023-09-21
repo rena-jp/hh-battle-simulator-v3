@@ -899,7 +899,7 @@ function createLeaguePointsElement$(resultPromise) {
             try {
                 const teamsPage = await fetch('teams.html');
                 const teamsHtml = await teamsPage.text();
-                const match = teamsHtml.match(/var\s+teams_data\s+=\s+(\{.*?\});/);
+                const match = teamsHtml.match(/var\s+teams_data\s+=\s+(\{.*\});/);
                 if (match) {
                     const teams_data = JSON.parse(match[1]);
                     const leaguesTeam = Object.values(teams_data).find(team => team.selected_for_battle_type.includes('leagues'));
