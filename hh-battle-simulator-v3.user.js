@@ -467,6 +467,20 @@ function createLeaguePointsElement$(resultPromise) {
     }
 }
 
+function getFromLocalStorage(key, defaultValue) {
+    const value = localStorage.getItem(key);
+    if (value == null) return defaultValue;
+    try {
+        return JSON.parse(value);
+    } catch (e) {
+        return value;
+    }
+}
+
+function setIntoLocalStorage(key, value) {
+    localStorage.setItem(key, JSON.stringify(value));
+}
+
 (async function main() {
     if (document.readyState === 'loading') {
         await new Promise(resolve => {
@@ -795,7 +809,9 @@ function createLeaguePointsElement$(resultPromise) {
         function getLastOpponentTeam(battleType) {
             if (!['leagues', 'trolls', 'pantheon'].includes(battleType)) return null;
 
-            const lastOpponentId = localStorageGetItem('HHBattleSimulatorLastOpponentId');
+            const lastOpponentId = getFromLocalStorage('HHBattleSimulatorLastOpponentId');
+            if (lastOpponentId == null) return null;
+
             if (battleType === 'leagues') {
                 if (localStorageGetItem('leagues_id') != lastOpponentId) return null;
             }
@@ -806,10 +822,7 @@ function createLeaguePointsElement$(resultPromise) {
                 if (localStorageGetItem('pantheon_id') != lastOpponentId) return null;
             }
 
-            const lastOpponentTeam = localStorageGetItem('HHBattleSimulatorLastOpponentTeam');
-            if (lastOpponentTeam == null) return null;
-
-            return JSON.parse(lastOpponentTeam);
+            return getFromLocalStorage('HHBattleSimulatorLastOpponentTeam', null);
         }
 
         function getMythicBoosterMultiplier(battleType) {
@@ -848,8 +861,8 @@ function createLeaguePointsElement$(resultPromise) {
             });
             await beforeChangeTeam;
 
-            localStorageSetItem('HHBattleSimulatorLastOpponentId', opponent_fighter.player.id_fighter);
-            localStorageSetItem('HHBattleSimulatorLastOpponentTeam', JSON.stringify(opponentTeam));
+            setIntoLocalStorage('HHBattleSimulatorLastOpponentId', opponent_fighter.player.id_fighter);
+            setIntoLocalStorage('HHBattleSimulatorLastOpponentTeam', opponentTeam);
             if (checkPage('/leagues-pre-battle.html')) {
                 localStorageSetItem('battle_type', 'leagues');
                 localStorageSetItem('leagues_id', id);
@@ -872,7 +885,7 @@ function createLeaguePointsElement$(resultPromise) {
 
             const leaguesTeam = Object.values(teams_data).find(team => team.selected_for_battle_type.includes('leagues'));
             if (leaguesTeam != null) {
-                localStorageSetItem('HHBattleSimulatorPlayerLeaguesTeam', JSON.stringify(leaguesTeam));
+                setIntoLocalStorage('HHBattleSimulatorPlayerLeaguesTeam', leaguesTeam);
             }
 
             const selectButton = document.getElementById('btn-select-team');
@@ -880,7 +893,7 @@ function createLeaguePointsElement$(resultPromise) {
                 if (localStorageGetItem('battle_type') === 'leagues') {
                     const selectedIndex = document.querySelector('.selected-team')?.dataset.teamIndex;
                     const selectedTeam = teams_data[selectedIndex];
-                    localStorageSetItem('HHBattleSimulatorPlayerLeaguesTeam', JSON.stringify(selectedTeam ?? null));
+                    setIntoLocalStorage('HHBattleSimulatorPlayerLeaguesTeam', selectedTeam ?? null);
                 }
             }, true);
         }
@@ -888,13 +901,13 @@ function createLeaguePointsElement$(resultPromise) {
             const { hero_data } = window;
             if (hero_data == null) throw new Error('hero_data is not found');
             if (hero_data.team) {
-                localStorageSetItem('HHBattleSimulatorPlayerLeaguesTeam', JSON.stringify(hero_data.team));
+                setIntoLocalStorage('HHBattleSimulatorPlayerLeaguesTeam', hero_data.team);
             }
         }
         if (checkPage('/league-battle.html')) {
             const { hero_fighter } = window;
             if (hero_fighter == null) throw new Error('hero_fighter is not found');
-            localStorageSetItem('HHBattleSimulatorPlayerLeaguesTeam', JSON.stringify(hero_fighter));
+            setIntoLocalStorage('HHBattleSimulatorPlayerLeaguesTeam', hero_fighter);
         }
     }
 
@@ -908,14 +921,13 @@ function createLeaguePointsElement$(resultPromise) {
                     const teams_data = JSON.parse(match[1]);
                     const leaguesTeam = Object.values(teams_data).find(team => team.selected_for_battle_type.includes('leagues'));
                     if (leaguesTeam != null) {
-                        localStorageSetItem('HHBattleSimulatorPlayerLeaguesTeam', JSON.stringify(leaguesTeam));
+                        setIntoLocalStorage('HHBattleSimulatorPlayerLeaguesTeam', leaguesTeam);
                         return leaguesTeam;
                     }
                 }
             } catch (e) { }
         }
-        const lastSelectedTeam = localStorageGetItem('HHBattleSimulatorPlayerLeaguesTeam');
-        return JSON.parse(lastSelectedTeam ?? null);
+        return getFromLocalStorage('HHBattleSimulatorPlayerLeaguesTeam', null);
     }
 
     async function changePowerSortToSimSort() {
