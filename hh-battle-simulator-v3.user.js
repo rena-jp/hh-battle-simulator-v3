@@ -1073,5 +1073,8 @@ table.sim-table td {
 .sim-column .sim-mark {
     margin: 0.25em 0;
 }
+.player_team_block {
+	min-width: 15rem;
+}
 </style>`);
 }
