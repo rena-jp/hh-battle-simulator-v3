@@ -120,7 +120,9 @@ const workerScript = (() => {
                 if (!isDefenderStunned) {
                     defenderSkill++;
                     // Defender does not have shield and reflect at the same time, so shieldDamage is not required.
-                    const reflectedDamage = Math.ceil((egoDamage + executionDamage) * defender.reflect);
+                    // Reflected damage daes not include execution damage in the game.
+                    // const reflectedDamage = Math.ceil((egoDamage + executionDamage) * defender.reflect);
+                    const reflectedDamage = Math.ceil(egoDamage * defender.reflect);
 
                     let reflectedDamageToShield = 0;
                     if (attacker.shield && 1 <= attackerSkill && attackerSkill <= attacker.shieldEndurance) {
