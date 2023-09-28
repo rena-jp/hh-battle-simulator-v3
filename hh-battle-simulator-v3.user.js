@@ -317,13 +317,13 @@ function toPercentage(value) {
 
 function toLeaguePointsPerFight(value) {
     if (value >= 25) return '25';
-    if (value > 24.99) return truncateSoftly(value, 3);
+    if (value > 24.9) return truncateSoftly(value, 3);
     return truncateSoftly(value, 2);
 }
 
 function toPreciseLeaguePointsPerFight(value) {
     if (value >= 25) return '25';
-    if (value > 24.99) return (25 - parseFloat((25 - value).toPrecision(2))).toString();
+    if (value > 24.9) return (25 - parseFloat((25 - value).toPrecision(2))).toString();
     return truncateSoftly(value, 2);
 }
 
