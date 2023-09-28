@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Hentai Heroes Battle Simulator v3
 // @namespace    https://github.com/rena-jp/hh-battle-simulator-v3
-// @version      3.8.1
+// @version      3.9.1
 // @description  Add a battle simulator to Hentai Heroes and related games
 // @author       rena
 // @match        https://*.hentaiheroes.com/*
@@ -262,16 +262,21 @@ function calcBattleDataFromFighters(fighterRawData, opponentRawData) {
     };
 }
 
-function calcBattleDataFromTeams(fighterTeam, opponentTeam, mythicBoosterMultiplier) {
+function calcCounterBonus(fighterTeam, opponentTeam) {
     const checklist = ['fire', 'nature', 'stone', 'sun', 'water'];
-    let damageMultiplier = mythicBoosterMultiplier ?? 1;
-    let egoMultiplier = 1;
+    let multiplier = 1;
     fighterTeam.theme_elements.forEach(e => {
         if (opponentTeam.theme.includes(e.domination) && checklist.includes(e.domination)) {
-            damageMultiplier += 0.1;
-            egoMultiplier += 0.1;
+            multiplier += 0.1;
         }
     });
+    return multiplier;
+}
+
+function calcBattleDataFromTeams(fighterTeam, opponentTeam, mythicBoosterMultiplier) {
+    const counterBonus = calcCounterBonus(fighterTeam, opponentTeam);
+    const damageMultiplier = counterBonus * (mythicBoosterMultiplier ?? 1);
+    const egoMultiplier = counterBonus;
     const opponentSynergyBonuses = Object.fromEntries(
         opponentTeam.synergies.map(e => [e.element.type, e.bonus_multiplier])
     );
@@ -317,13 +322,13 @@ function toPercentage(value) {
 
 function toLeaguePointsPerFight(value) {
     if (value >= 25) return '25';
-    if (value > 24.99) return truncateSoftly(value, 3);
+    if (value > 24.9) return truncateSoftly(value, 3);
     return truncateSoftly(value, 2);
 }
 
 function toPreciseLeaguePointsPerFight(value) {
     if (value >= 25) return '25';
-    if (value > 24.99) return (25 - parseFloat((25 - value).toPrecision(2))).toString();
+    if (value > 24.9) return (25 - parseFloat((25 - value).toPrecision(2))).toString();
     return truncateSoftly(value, 2);
 }
 
@@ -532,6 +537,7 @@ function setIntoLocalStorage(key, value) {
         $(() => { resolve(); });
     });
 
+    savePlayerBoosters();
     savePlayerLeaguesTeam();
     saveLastOpponentTeam();
     addStyle();
@@ -828,22 +834,93 @@ function setIntoLocalStorage(key, value) {
         }
 
         function getMythicBoosterMultiplier(battleType) {
-            const mythicBoosters = JSON.parse(localStorage.HHPlusPlusBoosterStatus ?? null)?.mythic?.map(e => e.item?.identifier);
-            // 'MB2': AME, 'MB3': Headband, 'MB8': LME, 'MB9': SME
-            if (['leagues'].includes(battleType) && ['MB2', 'MB8'].some(e => mythicBoosters.includes(e))) {
-                return 1.15;
+            const boosterBonus = getFromLocalStorage('HHBattleSimulatorPlayerBoosterBonus');
+            return boosterBonus?.[battleType] ?? 1;
+        }
+    }
+
+    async function savePlayerBoosters() {
+        if (checkPage('/tower-of-fame.html')) {
+            const { server_now_ts, opponents_list, Hero } = window;
+            if (server_now_ts == null) throw new Error('server_now_ts is not found');
+            if (opponents_list == null) throw new Error('opponents_list is not found');
+
+            const playerId = Hero?.infos?.id;
+            if (playerId == null) throw new Error('Hero.infos.id is not found');
+
+            const player = opponents_list.find(e => e.player.id_fighter == playerId);
+            if (player == null) return;
+
+            const boosterBonus = getFromLocalStorage('HHBattleSimulatorPlayerBoosterBonus', {});
+            boosterBonus.leagues = 1;
+            player.boosters.map(e => e.item).forEach(e => {
+                if (e.rarity == 'mythic') {
+                    // 'MB2': AME, 'MB3': Headband, 'MB8': LME, 'MB9': SME
+                    const id = e.identifier;
+                    if (id == 'MB2') {
+                        boosterBonus.leagues = 1.15;
+                        boosterBonus.seasons = 1.15;
+                    }
+                    if (id == 'MB8') {
+                        boosterBonus.leagues = 1.15;
+                        boosterBonus.seasons = 1;
+                    }
+                }
+            });
+            setIntoLocalStorage('HHBattleSimulatorPlayerBoosterBonus', boosterBonus);
+        }
+        if (checkPage('/leagues-pre-battle.html', '/troll-pre-battle.html', '/pantheon-pre-battle.html')) {
+            const { hero_data, opponent_fighter } = window;
+            if (hero_data == null) throw new Error('hero_data is not found');
+            if (opponent_fighter == null) throw new Error('opponent_fighter is not found');
+
+            const counterBonus = calcCounterBonus(hero_data.team, opponent_fighter.player.team);
+            const percentage = Math.round(100 * hero_data.damage / hero_data.team.caracs.damage / counterBonus);
+
+            const boosterBonus = getFromLocalStorage('HHBattleSimulatorPlayerBoosterBonus', {});
+            if (checkPage('/leagues-pre-battle.html')) {
+                boosterBonus.leagues = percentage / 100;
             }
-            if (['seasons'].includes(battleType) && ['MB2', 'MB9'].some(e => mythicBoosters.includes(e))) {
-                return 1.15;
+            if (checkPage('/troll-pre-battle.html')) {
+                boosterBonus.trolls = percentage / 100;
             }
-            if (['pantheon', 'trolls'].includes(battleType) && ['MB3'].some(e => mythicBoosters.includes(e))) {
-                return 1.25;
+            if (checkPage('/pantheon-pre-battle.html')) {
+                boosterBonus.pantheon = percentage / 100;
             }
-            return 1;
+            setIntoLocalStorage('HHBattleSimulatorPlayerBoosterBonus', boosterBonus);
+        }
+        if (checkPage('/season.html')) {
+            const { hero_data, opponents, caracs_per_opponent } = window;
+            if (hero_data == null) throw new Error('hero_data is not found');
+            if (opponents == null) throw new Error('opponents is not found');
+            if (caracs_per_opponent == null) throw new Error('caracs_per_opponent is not found');
+
+            const opponent = opponents[0].player;
+            const playerCaracs = caracs_per_opponent[opponent.id_fighter];
+            const counterBonus = calcCounterBonus(hero_data.team, opponent.team);
+            const percentage = Math.round(100 * playerCaracs.damage / hero_data.team.caracs.damage / counterBonus);
+
+            const boosterBonus = getFromLocalStorage('HHBattleSimulatorPlayerBoosterBonus', {});
+            boosterBonus.seasons = percentage / 100;
+            setIntoLocalStorage('HHBattleSimulatorPlayerBoosterBonus', boosterBonus);
         }
     }
 
     async function saveLastOpponentTeam() {
+        if (checkPage('/tower-of-fame.html')) {
+            await afterGameInited;
+
+            const button = document.getElementById('change_team');
+            if (button != null) {
+                button.addEventListener('click', update, true);
+                button.addEventListener('auxclick', update, true);
+            }
+
+            function update() {
+                setIntoLocalStorage('HHBattleSimulatorLastOpponentId', 0);
+                setIntoLocalStorage('HHBattleSimulatorLastOpponentTeam', null);
+            }
+        }
         if (checkPage('/leagues-pre-battle.html', '/troll-pre-battle.html', '/pantheon-pre-battle.html')) {
             const id = location.search.match(/id_opponent=(\d+)/)?.[1];
             if (id == null) return;
@@ -856,26 +933,27 @@ function setIntoLocalStorage(key, value) {
 
             await afterGameInited;
 
-            const beforeChangeTeam = new Promise(resolve => {
-                document.getElementById('change_team')?.addEventListener('click', () => {
-                    resolve();
-                }, true);
-            });
-            await beforeChangeTeam;
+            const button = document.getElementById('change_team');
+            if (button != null) {
+                button.addEventListener('click', update, true);
+                button.addEventListener('auxclick', update, true);
+            }
 
-            setIntoLocalStorage('HHBattleSimulatorLastOpponentId', opponent_fighter.player.id_fighter);
-            setIntoLocalStorage('HHBattleSimulatorLastOpponentTeam', opponentTeam);
-            if (checkPage('/leagues-pre-battle.html')) {
-                localStorageSetItem('battle_type', 'leagues');
-                localStorageSetItem('leagues_id', id);
-            }
-            if (checkPage('/troll-pre-battle.html')) {
-                localStorageSetItem('battle_type', 'trolls');
-                localStorageSetItem('troll_id', id);
-            }
-            if (checkPage('/pantheon-pre-battle.html')) {
-                localStorageSetItem('battle_type', 'pantheon');
-                localStorageSetItem('pantheon_id', id);
+            function update() {
+                setIntoLocalStorage('HHBattleSimulatorLastOpponentId', opponent_fighter.player.id_fighter);
+                setIntoLocalStorage('HHBattleSimulatorLastOpponentTeam', opponentTeam);
+                if (checkPage('/leagues-pre-battle.html')) {
+                    localStorageSetItem('battle_type', 'leagues');
+                    localStorageSetItem('leagues_id', id);
+                }
+                if (checkPage('/troll-pre-battle.html')) {
+                    localStorageSetItem('battle_type', 'trolls');
+                    localStorageSetItem('troll_id', id);
+                }
+                if (checkPage('/pantheon-pre-battle.html')) {
+                    localStorageSetItem('battle_type', 'pantheon');
+                    localStorageSetItem('pantheon_id', id);
+                }
             }
         }
     }
