@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Hentai Heroes Battle Simulator v3
 // @namespace    https://github.com/rena-jp/hh-battle-simulator-v3
-// @version      3.9
+// @version      3.9.1
 // @description  Add a battle simulator to Hentai Heroes and related games
 // @author       rena
 // @match        https://*.hentaiheroes.com/*
@@ -727,7 +727,7 @@ function setIntoLocalStorage(key, value) {
 
             function updateStats() {
                 const separator = window.get_dec_and_sep(window.get_lang()).sep;
-                const getStat = e => parseFloat($(`#stats-${e}`).text().trim().replace(separator, ''));
+                const getStat = e => parseFloat($(`#stats-${e}`).text().trim().replaceAll(separator, ''));
                 const caracs = {
                     damage: getStat('damage'),
                     defense: getStat('defense'),
