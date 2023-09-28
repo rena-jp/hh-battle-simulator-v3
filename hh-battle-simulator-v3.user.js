@@ -907,6 +907,20 @@ function setIntoLocalStorage(key, value) {
     }
 
     async function saveLastOpponentTeam() {
+        if (checkPage('/tower-of-fame.html')) {
+            await afterGameInited;
+
+            const button = document.getElementById('change_team');
+            if (button != null) {
+                button.addEventListener('click', update, true);
+                button.addEventListener('auxclick', update, true);
+            }
+
+            function update() {
+                setIntoLocalStorage('HHBattleSimulatorLastOpponentId', 0);
+                setIntoLocalStorage('HHBattleSimulatorLastOpponentTeam', null);
+            }
+        }
         if (checkPage('/leagues-pre-battle.html', '/troll-pre-battle.html', '/pantheon-pre-battle.html')) {
             const id = location.search.match(/id_opponent=(\d+)/)?.[1];
             if (id == null) return;
@@ -919,26 +933,27 @@ function setIntoLocalStorage(key, value) {
 
             await afterGameInited;
 
-            const beforeChangeTeam = new Promise(resolve => {
-                document.getElementById('change_team')?.addEventListener('click', () => {
-                    resolve();
-                }, true);
-            });
-            await beforeChangeTeam;
+            const button = document.getElementById('change_team');
+            if (button != null) {
+                button.addEventListener('click', update, true);
+                button.addEventListener('auxclick', update, true);
+            }
 
-            setIntoLocalStorage('HHBattleSimulatorLastOpponentId', opponent_fighter.player.id_fighter);
-            setIntoLocalStorage('HHBattleSimulatorLastOpponentTeam', opponentTeam);
-            if (checkPage('/leagues-pre-battle.html')) {
-                localStorageSetItem('battle_type', 'leagues');
-                localStorageSetItem('leagues_id', id);
-            }
-            if (checkPage('/troll-pre-battle.html')) {
-                localStorageSetItem('battle_type', 'trolls');
-                localStorageSetItem('troll_id', id);
-            }
-            if (checkPage('/pantheon-pre-battle.html')) {
-                localStorageSetItem('battle_type', 'pantheon');
-                localStorageSetItem('pantheon_id', id);
+            function update() {
+                setIntoLocalStorage('HHBattleSimulatorLastOpponentId', opponent_fighter.player.id_fighter);
+                setIntoLocalStorage('HHBattleSimulatorLastOpponentTeam', opponentTeam);
+                if (checkPage('/leagues-pre-battle.html')) {
+                    localStorageSetItem('battle_type', 'leagues');
+                    localStorageSetItem('leagues_id', id);
+                }
+                if (checkPage('/troll-pre-battle.html')) {
+                    localStorageSetItem('battle_type', 'trolls');
+                    localStorageSetItem('troll_id', id);
+                }
+                if (checkPage('/pantheon-pre-battle.html')) {
+                    localStorageSetItem('battle_type', 'pantheon');
+                    localStorageSetItem('pantheon_id', id);
+                }
             }
         }
     }
