@@ -1,3 +1,10 @@
+### ***New version available***
+
+Hentai Heroes Battle Simulator v4:
+https://github.com/rena-jp/hh-battle-simulator-v4
+
+***
+
 # Hentai Heroes Battle Simulator v3
 
 ## Description
